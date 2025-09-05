@@ -12,14 +12,14 @@ public class BouncingBallsDemo {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Bouncing Balls");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        frame.setSize(1200, 600);
         frame.setLocationRelativeTo(null); //null sets the frame center of screen
 
         AnimationPanel panel = new AnimationPanel();
         frame.add(panel);
 
         JButton shootButton = new JButton("Fire!");
-        shootButton.addActionListener(e -> panel.fireBall());
+        shootButton.addActionListener(e -> panel.fireBallWithAim());
         frame.add(shootButton, BorderLayout.SOUTH);
         frame.setVisible(true);
     }
@@ -28,40 +28,86 @@ public class BouncingBallsDemo {
 class AnimationPanel extends JPanel {
 
     private boolean ballFired = false;
+    private boolean aiming = false;
     private double x, y, vx, vy;
     private int ballRadius = 15;
-    private final double gravity = 0.27;
+    private final double gravity = 0.8;
     private final double energyLoss = 0.8;
-    private ImageIcon cannIcon;
+    private ImageIcon cannonIcon;
     private Image scaledCannon;
     private javax.swing.Timer timer;
+    private int aimStartX, aimStartY, aimEndX, aimEndY;
 
     public AnimationPanel() {
         setBackground(Color.WHITE);
-        cannIcon = new ImageIcon("cannon.png");
+        cannonIcon = new ImageIcon("cannon.png");
         int cannonWidth = 120;
         int cannonHeight = 90;
-        scaledCannon = cannIcon.getImage().getScaledInstance(cannonWidth, cannonHeight, Image.SCALE_SMOOTH);
+        scaledCannon = cannonIcon.getImage().getScaledInstance(cannonWidth, cannonHeight, Image.SCALE_SMOOTH);
+
+        //mouse listeners for frag and aim
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                if (!ballFired) {
+                    aiming = true;
+                    aimStartX = e.getX();
+                    aimStartY = e.getY();
+                    aimEndX = aimStartX;
+                    aimEndY = aimStartY;
+                }
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                if (aiming && !ballFired) {
+                    aimEndX = e.getX();
+                    aimEndY = e.getY();
+                    fireBallWithAim();
+                    aiming = false;
+                }
+            } 
+        });
+
+        addMouseMotionListener(new java.awt.event.MouseMotionListener() {
+            @Override
+            public void mouseDragged(java.awt.event.MouseEvent e) {
+                if (aiming && !ballFired) {
+                    aimEndX = e.getX();
+                    aimEndY = e.getY();
+                    repaint();
+                }
+            }
+
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                // No action needed for mouseMoved in this context
+            }
+        });
     }
 
-    public void fireBall() {
-        // if (ballFired) return;
+    private int cannonX() { return 180; }
+    private int cannonWidth() { return 120; }
+    private int cannonHeight() { return 90; }
+    private int cannonY() { return getHeight() / 3 - cannonHeight() / 2;}
 
-        if (getWidth() > 0 && getHeight() > 0) {
-            int cannonX = 10;
-            int cannonWidth = 120;
-            int cannonHeight = 90;
-            int cannonY = getHeight() / 3 - cannonHeight / 2;
-            x = cannonX + cannonWidth - ballRadius;
-            y = cannonY + cannonHeight / 3 - ballRadius;
+    public void fireBallWithAim() {
+        
+        int tipX = cannonX() + cannonWidth();
+        int tipY = cannonY() + cannonHeight() / 4;
+        x = tipX - ballRadius;
+        y = tipY - ballRadius;
 
-            vx = 10;
-            vy = -8;
-            ballFired = true;
+        //calculate velocity
+        double dx = aimStartX - aimEndX;
+        double dy = aimStartY - aimEndY;
+        double scale = 0.1; //speed sensitivity
 
-            timer = new javax.swing.Timer(16, e -> {
-
-                vy += gravity;
+        vx = dx * scale;
+        vy = dy * scale;
+        ballFired = true;
+        timer = new javax.swing.Timer(16, e -> {
+            vy += gravity;
                 x += vx;
                 y += vy;
                 //if ball hits left wall
@@ -80,7 +126,7 @@ class AnimationPanel extends JPanel {
                     vy = -vy * energyLoss;
                 }
                 //if ball hits bottom wall
-                if (y > getHeight()) {
+                if (y + ballRadius * 2 > getHeight()) {
                     y = getHeight() - ballRadius * 2;
                     vy = -vy * energyLoss;
                     //if velocity very small stop bounce
@@ -89,9 +135,8 @@ class AnimationPanel extends JPanel {
                     }
                 }
                 repaint();
-            });
-            timer.start();
-        }
+        });
+        timer.start();
     }
 
     @Override
@@ -99,11 +144,23 @@ class AnimationPanel extends JPanel {
         super.paintComponent(graphics);
 
         //draw the scaled cannon left edge centered vertically
-        int cannonX = 10;
-        int cannonY = getHeight() / 3 - 90 / 2;
+        int cannonX = cannonX();
+        int cannonY = cannonY();
         graphics.drawImage(scaledCannon, cannonX, cannonY, this);
 
+        if (!ballFired && aiming) {
+            //drwa line
+            graphics.setColor(Color.BLUE);
+            graphics.drawLine(aimStartX, aimStartY, aimEndX, aimEndY);
+            //draw ball at cannon
+            int tipX = cannonX() + cannonWidth();
+            int tipY = cannonY() + cannonHeight() / 4;
+            graphics.setColor(Color.RED);
+            graphics.fillOval(tipX - ballRadius, tipY - ballRadius, ballRadius * 2, ballRadius * 2);
+        }
+
         if (ballFired) {
+            
             graphics.setColor(Color.RED);
             graphics.fillOval((int)x, (int)y, ballRadius * 2, ballRadius * 2);
         }
