@@ -18,9 +18,9 @@ public class BouncingBallsDemo {
         AnimationPanel panel = new AnimationPanel();
         frame.add(panel);
 
-        JButton shootButton = new JButton("Fire!");
-        shootButton.addActionListener(e -> panel.fireBallWithAim());
-        frame.add(shootButton, BorderLayout.SOUTH);
+        // JButton shootButton = new JButton("Fire!");
+        // shootButton.addActionListener(e -> panel.fireBallWithAim());
+        // frame.add(shootButton, BorderLayout.SOUTH);
         frame.setVisible(true);
     }
 }
@@ -34,18 +34,27 @@ class AnimationPanel extends JPanel {
     private final double gravity = 0.8;
     private final double energyLoss = 0.8;
     private ImageIcon cannonIcon;
+    private ImageIcon towerIcon;
     private Image scaledCannon;
+    private Image scaledTower;
     private javax.swing.Timer timer;
     private int aimStartX, aimStartY, aimEndX, aimEndY;
 
     public AnimationPanel() {
         setBackground(Color.WHITE);
+
+        //load and scale cannon
         cannonIcon = new ImageIcon("cannon.png");
         int cannonWidth = 120;
         int cannonHeight = 90;
         scaledCannon = cannonIcon.getImage().getScaledInstance(cannonWidth, cannonHeight, Image.SCALE_SMOOTH);
+        //load and scale tower
+        towerIcon = new ImageIcon("tower.png");
+        int towerWidth = 200;
+        int towerHeight = 320;
+        scaledTower = towerIcon.getImage().getScaledInstance(towerWidth, towerHeight, Image.SCALE_SMOOTH);
 
-        //mouse listeners for frag and aim
+        //mouse listeners for drag and aim
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mousePressed(java.awt.event.MouseEvent e) {
@@ -142,6 +151,20 @@ class AnimationPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);
+
+        //draw sky
+        graphics.setColor(new Color(34, 206, 235));
+        graphics.fillRect(0, 0, getWidth(), getHeight());
+
+        //draw grass
+        graphics.setColor(new Color(34, 139, 34));
+        int grassHeight = 80;
+        graphics.fillRect(0, getHeight() - grassHeight, getWidth(), grassHeight);
+
+        //draw scaled tower
+        int towerX = cannonX() - 35;
+        int towerY = cannonY() + 42;
+        graphics.drawImage(scaledTower, towerX, towerY, this);
 
         //draw the scaled cannon left edge centered vertically
         int cannonX = cannonX();
