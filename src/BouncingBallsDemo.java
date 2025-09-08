@@ -7,6 +7,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.util.ArrayList;;
 
 public class BouncingBallsDemo {
     public static void main(String[] args) {
@@ -15,19 +16,40 @@ public class BouncingBallsDemo {
         frame.setSize(1200, 600);
         frame.setLocationRelativeTo(null); //null sets the frame center of screen
 
-        AnimationPanel panel = new AnimationPanel();
-        frame.add(panel);
+        AnimationPanel gamePanel = new AnimationPanel();
+        gamePanel.setVisible(false); // Hide game panel initially
+        frame.setLayout(null); // Use absolute positioning for overlay
+        gamePanel.setBounds(0, 0, frame.getWidth(), frame.getHeight());
+        frame.add(gamePanel);
 
-        // JButton shootButton = new JButton("Fire!");
-        // shootButton.addActionListener(e -> panel.fireBallWithAim());
-        // frame.add(shootButton, BorderLayout.SOUTH);
+        StartPanel startPanel = new StartPanel(gamePanel);
+        startPanel.setBounds(0, 0, frame.getWidth(), frame.getHeight());
+        frame.add(startPanel);
+
         frame.setVisible(true);
+    }
+}
+
+/**
+ * 
+ */
+class Ball {
+    double x, y, vx, vy;
+    int radius;
+    boolean active;
+
+    Ball(double inX, double inY, double inVx, double inVy, int inRadius) {
+        x = inX;
+        y = inY;
+        vx = inVx;
+        vy = inVy;
+        radius = inRadius;
+        active = true;
     }
 }
 
 class AnimationPanel extends JPanel {
 
-    private boolean ballFired = false;
     private boolean aiming = false;
     private double x, y, vx, vy;
     private int ballRadius = 15;
@@ -35,6 +57,7 @@ class AnimationPanel extends JPanel {
     private final double energyLoss = 0.8;
     private int swipeOffSet = 0;
     private int swipeDirection = -1;
+    private ArrayList<Ball> balls = new ArrayList<>();
 
     private ImageIcon cannonIcon;
     private ImageIcon towerIcon;
@@ -76,7 +99,7 @@ class AnimationPanel extends JPanel {
 
         //timer for drawing and moving the swipe icon
         swipeTimer = new javax.swing.Timer(20, e -> {
-            if (!ballFired && !aiming) {
+            if (!aiming) {
                 swipeOffSet += swipeDirection * 2;
                 if (swipeOffSet < - 60 || swipeOffSet > 0) swipeDirection *= -1;
                 repaint();
@@ -87,7 +110,7 @@ class AnimationPanel extends JPanel {
         addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mousePressed(java.awt.event.MouseEvent e) {
-                if (!ballFired) {
+                if (!aiming) {
                     aiming = true;
                     aimStartX = e.getX();
                     aimStartY = e.getY();
@@ -98,7 +121,7 @@ class AnimationPanel extends JPanel {
 
             @Override
             public void mouseReleased(java.awt.event.MouseEvent e) {
-                if (aiming && !ballFired) {
+                if (aiming) {
                     aimEndX = e.getX();
                     aimEndY = e.getY();
                     fireBallWithAim();
@@ -110,7 +133,7 @@ class AnimationPanel extends JPanel {
         addMouseMotionListener(new java.awt.event.MouseMotionListener() {
             @Override
             public void mouseDragged(java.awt.event.MouseEvent e) {
-                if (aiming && !ballFired) {
+                if (aiming) {
                     aimEndX = e.getX();
                     aimEndY = e.getY();
                     repaint();
@@ -124,6 +147,46 @@ class AnimationPanel extends JPanel {
         });
     }
 
+    /**
+     * update the list of balls with new x and y values
+     * then repaint all balls
+     */
+    private void updateBalls() {
+        for (Ball ball : balls) {
+            if (!ball.active) continue;
+
+            if (!ball.active) continue;
+            ball.vy += gravity;
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            // Left wall
+            if (ball.x < 0) {
+                ball.x = 0;
+                ball.vx = -ball.vx * energyLoss;
+            }
+            // Right wall
+            if (ball.x + ball.radius * 2 > getWidth()) {
+                ball.x = getWidth() - ball.radius * 2;
+                ball.vx = -ball.vx * energyLoss;
+            }
+            // Top wall
+            if (ball.y < 0) {
+                ball.y = 0;
+                ball.vy = -ball.vy * energyLoss;
+            }
+            // Bottom wall
+            if (ball.y + ball.radius * 2 > getHeight()) {
+                ball.y = getHeight() - ball.radius * 2;
+                ball.vy = -ball.vy * energyLoss;
+                if (Math.abs(ball.vy) < 0.8) {
+                    ball.vy = 0;
+                    ball.active = false; // Ball comes to rest
+                }
+            }
+        }
+        repaint();
+    }
+
     private int cannonX() { return 180; }
     private int cannonWidth() { return 120; }
     private int cannonHeight() { return 90; }
@@ -133,8 +196,8 @@ class AnimationPanel extends JPanel {
         
         int tipX = cannonX() + cannonWidth() + 10;
         int tipY = cannonY() + cannonHeight() / 3;
-        x = tipX - ballRadius * 2;
-        y = tipY - ballRadius * 2;
+        double x = tipX - ballRadius * 2;
+        double y = tipY - ballRadius * 2;
 
         //calculate velocity
         double dx = aimStartX - aimEndX;
@@ -143,38 +206,13 @@ class AnimationPanel extends JPanel {
 
         vx = dx * scale;
         vy = dy * scale;
-        ballFired = true;
-        timer = new javax.swing.Timer(16, e -> {
-            vy += gravity;
-                x += vx;
-                y += vy;
-                //if ball hits left wall
-                if (x < 0) {
-                    x = 0;
-                    vx = -vx * energyLoss;
-                }
-                //if ball hits right wall
-                if (x + ballRadius * 2 > getWidth()) {
-                    x = getWidth() - ballRadius * 2;
-                    vx = -vx * energyLoss;
-                }
-                //if ball hits top wall
-                if (y < 0) {
-                    y = 0;
-                    vy = -vy * energyLoss;
-                }
-                //if ball hits bottom wall
-                if (y + ballRadius * 2 > getHeight()) {
-                    y = getHeight() - ballRadius * 2;
-                    vy = -vy * energyLoss;
-                    //if velocity very small stop bounce
-                    if (Math.abs(vy) < 0.8) {
-                        vy = 0;
-                    }
-                }
-                repaint();
-        });
-        timer.start();
+        balls.add(new Ball(x, y, vx, vy, ballRadius));
+
+        if (timer == null) {
+            timer = new javax.swing.Timer(16, e -> updateBalls());
+            timer.start();
+        }
+        repaint();
     }
 
     @Override
@@ -200,37 +238,28 @@ class AnimationPanel extends JPanel {
         int cannonY = cannonY();
         graphics.drawImage(scaledCannon, cannonX, cannonY, this);
 
-        if (!ballFired && aiming) {
-            //drwa line
+        if (aiming) {
+            //draw aiming line
             graphics.setColor(Color.BLUE);
             graphics.drawLine(aimStartX, aimStartY, aimEndX, aimEndY);
-            //draw ball at cannon
-            // int tipX = cannonX() + cannonWidth();
-            // int tipY = cannonY() + cannonHeight() / 4;
-            // graphics.setColor(Color.RED);
-            // graphics.fillOval(tipX - ballRadius, tipY - ballRadius, ballRadius * 2, ballRadius * 2);
 
             int tipX = cannonX() + cannonWidth() + 10;
             int tipY = cannonY + cannonHeight() / 3;
             int tennisBallSize = ballRadius * 2;
             graphics.drawImage(scaledtennisBall, tipX - tennisBallSize, tipY - tennisBallSize, this);
-        }
-
-        if (!ballFired && !aiming) {
+        } else {
+            //draw the swipe image
             int tipX = cannonX() + cannonWidth() + swipeOffSet;
             int tipY = cannonY() + cannonHeight() / 3;
             int swipeSize = ballRadius * 2;
             graphics.drawImage(scaledSwipeIcon, tipX - swipeSize / 2, tipY - swipeSize / 2, this);
         }
 
-        if (ballFired) {
-            
-            // graphics.setColor(Color.RED);
-            // graphics.fillOval((int)x, (int)y, ballRadius * 2, ballRadius * 2);
-
-            //draw scaled cannon ball
-            graphics.drawImage(scaledtennisBall, (int)x, (int)y, this);
+        //always draw all the balls in the ball list
+        for (Ball ball : balls) {
+            graphics.drawImage(scaledtennisBall, (int)ball.x, (int)ball.y, this);
         }
+        
     }
 
 }
