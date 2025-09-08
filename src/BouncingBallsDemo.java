@@ -1,9 +1,7 @@
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
-
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Image;
@@ -16,16 +14,21 @@ public class BouncingBallsDemo {
         frame.setSize(1200, 600);
         frame.setLocationRelativeTo(null); //null sets the frame center of screen
 
+        // Use a layered pane for overlay
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setPreferredSize(new java.awt.Dimension(1200, 600));
+
         AnimationPanel gamePanel = new AnimationPanel();
+        gamePanel.setBounds(0, 0, 1200, 600);
         gamePanel.setVisible(false); // Hide game panel initially
-        frame.setLayout(null); // Use absolute positioning for overlay
-        gamePanel.setBounds(0, 0, frame.getWidth(), frame.getHeight());
-        frame.add(gamePanel);
+        layeredPane.add(gamePanel, JLayeredPane.DEFAULT_LAYER);
 
         StartPanel startPanel = new StartPanel(gamePanel);
-        startPanel.setBounds(0, 0, frame.getWidth(), frame.getHeight());
-        frame.add(startPanel);
+        startPanel.setBounds(0, 0, 1200, 600);
+        layeredPane.add(startPanel, JLayeredPane.PALETTE_LAYER);
 
+        frame.setContentPane(layeredPane);
+        frame.pack();
         frame.setVisible(true);
     }
 }
@@ -51,7 +54,7 @@ class Ball {
 class AnimationPanel extends JPanel {
 
     private boolean aiming = false;
-    private double x, y, vx, vy;
+    private double vx, vy;
     private int ballRadius = 15;
     private final double gravity = 0.8;
     private final double energyLoss = 0.8;
@@ -62,7 +65,6 @@ class AnimationPanel extends JPanel {
     private ImageIcon cannonIcon;
     private ImageIcon towerIcon;
     private ImageIcon tennisBall;
-    private ImageIcon dragIcon;
     private ImageIcon swipeIcon;
     private Image scaledtennisBall;
     private Image scaledCannon;
@@ -84,7 +86,7 @@ class AnimationPanel extends JPanel {
         //load and scale tower
         towerIcon = new ImageIcon("tower.png");
         int towerWidth = 200;
-        int towerHeight = 320;
+        int towerHeight = 340;
         scaledTower = towerIcon.getImage().getScaledInstance(towerWidth, towerHeight, Image.SCALE_SMOOTH);
 
         //load and scale tennis ball
