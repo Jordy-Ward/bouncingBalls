@@ -1,4 +1,5 @@
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
@@ -26,6 +27,7 @@ public class BouncingBallsDemo {
         StartPanel startPanel = new StartPanel(gamePanel);
         startPanel.setBounds(0, 0, 1200, 600);
         layeredPane.add(startPanel, JLayeredPane.PALETTE_LAYER);
+        gamePanel.setStartPanel(startPanel);
 
         frame.setContentPane(layeredPane);
         frame.pack();
@@ -52,6 +54,12 @@ class Ball {
 }
 
 class AnimationPanel extends JPanel {
+    private StartPanel startPanel;
+    private JButton endGameButton;
+
+    public void setStartPanel(StartPanel panel) {
+        this.startPanel = panel;
+    }
 
     private boolean aiming = false;
     private double vx, vy;
@@ -77,6 +85,7 @@ class AnimationPanel extends JPanel {
     //constructor
     public AnimationPanel() {
         setBackground(Color.WHITE);
+        setLayout(null);
 
         //load and scale cannon
         cannonIcon = new ImageIcon("cannon.png");
@@ -98,6 +107,29 @@ class AnimationPanel extends JPanel {
         swipeIcon = new ImageIcon("swipe2.png");
         int swipeSize = ballRadius * 3;
         scaledSwipeIcon = swipeIcon.getImage().getScaledInstance(swipeSize, swipeSize, Image.SCALE_SMOOTH);
+
+        // Add end game button with icon (top left)
+        endGameButton = new JButton();
+        try {
+            ImageIcon endIcon = new ImageIcon("endGame.png");
+            Image scaledEnd = endIcon.getImage().getScaledInstance(48, 48, Image.SCALE_SMOOTH);
+            endGameButton.setIcon(new ImageIcon(scaledEnd));
+        } catch (Exception ex) {
+            endGameButton.setText("End Game");
+        }
+        endGameButton.setToolTipText("End Game");
+        endGameButton.setBounds(10, 10, 56, 56);
+        endGameButton.setFocusPainted(false);
+        endGameButton.setContentAreaFilled(false);
+        endGameButton.setBorderPainted(false);
+        endGameButton.addActionListener(e -> {
+            if (startPanel != null) {
+                setVisible(false);
+                startPanel.setVisible(true);
+                startPanel.requestFocusInWindow();
+            }
+        });
+        add(endGameButton);
 
         //timer for drawing and moving the swipe icon
         swipeTimer = new javax.swing.Timer(20, e -> {
